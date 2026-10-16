@@ -1,0 +1,4 @@
+# Eureka has no peer-replication configuration in this application.
+replicaCount: 1
+podDisruptionBudget:
+  enabled: false

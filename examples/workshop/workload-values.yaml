@@ -1,0 +1,19 @@
+# Shared override for all six backend charts. Applied after their existing values.
+replicaCount: 2
+persistence:
+  enabled: true
+  storageClass: efs-sc
+  size: 5Gi
+  mountPath: /data
+nodeSelector:
+  workload: microservices
+tolerations:
+  - key: workload
+    operator: Equal
+    value: microservices
+    effect: NoSchedule
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+autoscaling:
+  enabled: false

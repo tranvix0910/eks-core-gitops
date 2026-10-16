@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workshop-spot
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: workshop-spot}
+  template:
+    metadata:
+      labels: {app: workshop-spot}
+    spec:
+      nodeSelector:
+        workload: batch
+        kubernetes.io/arch: amd64
+        karpenter.sh/capacity-type: spot
+      tolerations:
+        - key: workload
+          operator: Equal
+          value: batch
+          effect: NoSchedule
+      containers:
+        - name: proof
+          image: public.ecr.aws/docker/library/busybox:1.37.0
+          command: [sh, -c, 'echo workshop-spot; while true; do sleep 60; done']
+          resources:
+            requests: {cpu: 100m, memory: 32Mi}
+            limits: {memory: 64Mi}

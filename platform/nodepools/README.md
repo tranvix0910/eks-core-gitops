@@ -1,29 +1,15 @@
-# Karpenter Node Pools — Cluster `eks-workload`
+# Three workshop capacity groups
 
-| Manifest | NodePool Name | Capacity Type | Applied Taint | Target Workload |
-|---|---|---|---|---|
-| `nodepool-2-ondemand.yaml` | `ms-od` | On-Demand | `workload=microservices:NoSchedule` | ShopNow Microservices (Baseline SLA) |
-| `nodepool-2-spot.yaml` | `ms-spot` | Spot | `workload=microservices:NoSchedule` | ShopNow Microservices (Scaling) |
-| `nodepool-1-spot.yaml` | `batch-spot` | Spot Only | `workload=batch:NoSchedule` | Batch Jobs, Async Workers |
-| `nodepool-3-arm64.yaml` | `arm64` | Mixed ARM64 | `arch=arm64:NoSchedule` | ARM64 / Graviton Workloads |
+| Group | NodePool | Workload label | Purpose |
+|---|---|---|---|
+| 1 | `batch-spot` | `workload=batch` | Spot only |
+| 2 | `ms-od` + `ms-spot` | `workload=microservices` | Mixed capacity for backend services |
+| 3 | `arm64` | `arch=arm64` | ARM64 validation |
 
----
+Three logical groups are implemented as four NodePools. The infrastructure Managed Node Group is separate from these pools.
 
-## 1:3 On-Demand to Spot Ratio
+Install the controller and CRDs before EC2NodeClass, then apply NodePools. Follow the [configuration and workload tests](https://tranvix0910.github.io/eks-core-docs/docs/karpenter/ec2nodeclass-and-nodepools-configuration).
 
-Karpenter has no native On-Demand/Spot ratio setting within a single NodePool. "NodePool 2" is constructed by pairing **2 independent NodePools (`ms-od` and `ms-spot`) sharing identical labels (`workload=microservices`) and matching taints**.
+Weights of 100/10 and CPU limits of 24/72 provide a budget-based baseline and overflow arrangement; they do not enforce a fixed On-Demand:Spot node ratio of 1:3. See [measurement and the verification fixture](https://tranvix0910.github.io/eks-core-docs/docs/karpenter/on-demand-spot-ratio-and-limits).
 
-Karpenter fills `ms-od` (weight 100) first until hitting `limits.cpu`, then automatically overflows into `ms-spot` (weight 10).
-
-```
-ms-od    weight 100   limits.cpu 24   (~25% Peak Load, On-Demand)
-ms-spot  weight  10   limits.cpu 72   (~75% Peak Load, Spot)
-```
-
-See the complete analysis at [On-Demand / Spot ratio analysis](https://tranvix0910.github.io/eks-core-docs/docs/karpenter/on-demand-spot-ratio-and-limits).
-
----
-
-## Taints & NodeSelectors
-
-`nodeSelector` directs Pods but does not reserve nodes. Without a `taint`, arbitrary Pods could land in Spot-only pools. Therefore, all NodePools and Pods enforce both configurations.
+Each Pod needs selectors and tolerations for its intended group. Keep the Karpenter controller on infrastructure nodes. Review drift and workload impact before changing pool requirements or AMIs.

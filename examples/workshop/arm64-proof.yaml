@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workshop-arm64
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: workshop-arm64}
+  template:
+    metadata:
+      labels: {app: workshop-arm64}
+    spec:
+      nodeSelector:
+        arch: arm64
+        kubernetes.io/arch: arm64
+      tolerations:
+        - key: arch
+          operator: Equal
+          value: arm64
+          effect: NoSchedule
+      containers:
+        - name: proof
+          image: public.ecr.aws/docker/library/busybox:1.37.0
+          command: [sh, -c, 'uname -m; while true; do sleep 60; done']
+          resources:
+            requests: {cpu: 100m, memory: 32Mi}
+            limits: {memory: 64Mi}

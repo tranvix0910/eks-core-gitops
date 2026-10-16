@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: workshop-shared
+  namespace: shopnow
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workshop-proof
+  namespace: shopnow
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: workshop-proof
+  template:
+    metadata:
+      labels:
+        app: workshop-proof
+    spec:
+      nodeSelector:
+        workload: microservices
+        kubernetes.io/arch: amd64
+      tolerations:
+        - key: workload
+          operator: Equal
+          value: microservices
+          effect: NoSchedule
+      topologySpreadConstraints:
+        - maxSkew: 1
+          minDomains: 2
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          nodeAffinityPolicy: Honor
+          nodeTaintsPolicy: Honor
+          labelSelector:
+            matchLabels:
+              app: workshop-proof
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: workshop-proof
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        runAsNonRoot: true
+      containers:
+        - name: writer
+          image: public.ecr.aws/docker/library/busybox:1.37.0
+          command: [sh, -c]
+          args:
+            - 'echo "$HOSTNAME" > "/data/$HOSTNAME"; while true; do echo "workshop-proof $HOSTNAME $(date -u +%FT%TZ)"; sleep 15; done'
+          resources:
+            requests: {cpu: 100m, memory: 32Mi}
+            limits: {memory: 64Mi}
+          readinessProbe:
+            exec:
+              command: [sh, -c, 'test -w /data && test -f "/data/$HOSTNAME"']
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: workshop-shared
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: workshop-proof
+  namespace: shopnow
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: workshop-proof
