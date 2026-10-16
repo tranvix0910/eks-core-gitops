@@ -46,9 +46,18 @@ spec:
       # the scheduler and gets visibly slow past a few hundred pods.
       {{- if gt (int .Values.replicaCount) 1 }}
       topologySpreadConstraints:
+        # Replicas of one service must sit in different zones and on different
+        # nodes. Both rules are hard (DoNotSchedule): if only one node fits,
+        # the second replica stays Pending and Karpenter launches another node.
+        # minDomains: 2 counts a missing second domain as zero, which forces
+        # that spread even while only one node exists. Honor = count only the
+        # nodes this Pod may actually use (pool 2), not infra/Spot/ARM64 nodes.
         - maxSkew: 1
+          minDomains: 2
           topologyKey: topology.kubernetes.io/zone
           whenUnsatisfiable: DoNotSchedule
+          nodeAffinityPolicy: Honor
+          nodeTaintsPolicy: Honor
           labelSelector:
             matchLabels:
               app: {{ .Values.global.appName }}
@@ -58,8 +67,11 @@ spec:
           matchLabelKeys:
             - pod-template-hash
         - maxSkew: 1
+          minDomains: 2
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
+          whenUnsatisfiable: DoNotSchedule
+          nodeAffinityPolicy: Honor
+          nodeTaintsPolicy: Honor
           labelSelector:
             matchLabels:
               app: {{ .Values.global.appName }}

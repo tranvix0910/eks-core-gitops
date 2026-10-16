@@ -8,3 +8,6 @@ rancher-import*.yaml
 .DS_Store
 .idea/
 .vscode/
+
+# Rendered Applications and local workshop output
+.workshop/
