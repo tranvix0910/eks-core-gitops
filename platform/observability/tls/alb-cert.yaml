@@ -1,0 +1,16 @@
+# platform/observability/tls/alb-cert.yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: observability-alb-tls
+  namespace: cert-manager
+spec:
+  secretName: observability-alb-tls
+  dnsNames:
+    - mimir.observability.internal
+    - loki.observability.internal
+  duration: 8760h
+  renewBefore: 720h
+  issuerRef:
+    name: observability-ca-issuer
+    kind: ClusterIssuer

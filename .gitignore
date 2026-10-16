@@ -1,0 +1,10 @@
+kubeconfig
+kubeconfig-*
+*.kubeconfig
+rancher-import*.yaml
+*.pem
+*.key
+.env
+.DS_Store
+.idea/
+.vscode/

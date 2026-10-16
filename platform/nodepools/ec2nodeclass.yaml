@@ -1,0 +1,34 @@
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: default
+spec:
+  role: Karpenter-eks-workload
+
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: eks-workload
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: eks-workload
+
+  amiSelectorTerms:
+    - alias: al2023@v20260801
+
+  metadataOptions:
+    httpEndpoint: enabled
+    httpTokens: required
+    httpPutResponseHopLimit: 1
+
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 30Gi
+        volumeType: gp3
+        encrypted: true
+        deleteOnTermination: true
+
+  tags:
+    Project: eks-core
+    Cluster: eks-workload
+    ManagedBy: karpenter

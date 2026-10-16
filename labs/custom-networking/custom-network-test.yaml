@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: custom-network-lab
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netcheck
+  namespace: custom-network-lab
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: netcheck
+  template:
+    metadata:
+      labels:
+        app: netcheck
+    spec:
+      nodeSelector:
+        lab.eks-core/custom-network: "true"
+      tolerations:
+        - key: custom-network-lab
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      containers:
+        - name: curl
+          image: curlimages/curl:8.11.1
+          command: ["sh", "-c", "sleep 3600000"]
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
