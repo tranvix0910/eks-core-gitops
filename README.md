@@ -18,6 +18,9 @@ labs/
 
 ArgoCD's `app-of-apps` points at `platform/` in this repository.
 
+Kite's optional ALB Ingress is managed by Terraform layer 20, alongside its Helm
+release; it is not synced from this repository. See [Ingress ownership](platform/ingress/README.md).
+
 ## Placeholders to fill before syncing
 
 Account-specific values are not committed. Replace them in your fork (or with an overlay) before ArgoCD syncs:
